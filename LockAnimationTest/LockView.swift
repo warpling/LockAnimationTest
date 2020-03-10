@@ -8,7 +8,6 @@
 
 import Foundation
 import UIKit
-import pop
 
 class LockView : UIView {
 
@@ -131,46 +130,21 @@ class LockView : UIView {
     }
 }
 
-/*
- * WTF is this thing? Ugghhhhhhh okay, take a deep breath.
- * At the moment POP's custom AnimatableProperties don't work with Swift objects that aren't NSObjects (like UIView).
- * So this is an NSObject that the UIView we want to aniamte will hold a reference to, that references it
- * (weakly so we don't create a circular dependency). Yes it's dumb. If you know a better way to handle it please
- * let me know or better yet file a PR!
- *
- * POP Issue: https://github.com/facebook/pop/issues/133
- */
 class LockViewAnimator : NSObject {
 
     public weak var lockView: LockView?
-
-    func animatableProperty() -> POPAnimatableProperty? {
-        return POPAnimatableProperty.property(withName: "property", initializer: { prop in
-            guard let prop = prop else {
-                return
+    var threshold: Float = 0.01;
+    public var progress: CGFloat {
+        get {
+            if (self.lockView == nil) {
+                return 0;
             }
-            // read value: what checks what the view's progress property currently is
-            prop.readBlock = { obj, values in
-                guard let lockViewAnimator = obj as? LockViewAnimator,
-                    let lockView = lockViewAnimator.lockView,
-                    let values = values else {
-                        return
-                }
-
-                values[0] = CGFloat(lockView.progress)
+            return self.lockView!.progress;
+        }
+        set(newProgress) {
+            if (self.lockView != nil) {
+                self.lockView!.progress = newProgress;
             }
-            // write value: what sets the view's progress property
-            prop.writeBlock = { obj, values in
-                guard let lockViewAnimator = obj as? LockViewAnimator,
-                    let lockView = lockViewAnimator.lockView,
-                    let values = values else {
-                        return
-                }
-
-                lockView.progress = CGFloat(values[0])
-            }
-            // dynamics threshold: level of detail we care to animate
-            prop.threshold = 0.01
-        }) as? POPAnimatableProperty
+        }
     }
 }

@@ -7,13 +7,13 @@
 //
 
 import UIKit
-import pop
 
 class ViewController: UIViewController {
 
     let lockView    = LockView(frame: CGRect(x: 0, y: 0, width: 50, height: 71.5))
     let slider      = UISlider()
     let sliderLabel = UILabel()
+    var currentProgress: Float = 0;
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -57,12 +57,40 @@ class ViewController: UIViewController {
 
     @IBAction func tap(sender: UISlider) {
         // Run a fixed animation to (un)lock depending on current progress
-        let lockAnimation = POPBasicAnimation()
-        lockAnimation.property = lockView.animator.animatableProperty()
-        lockAnimation.fromValue = lockView.progress < 1.0 ? 0.0 : 1.0
-        lockAnimation.toValue = lockView.progress < 1.0 ? 1.0 : 0.0
-        lockAnimation.duration = 0.35
-        lockAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        lockView.animator.pop_add(lockAnimation, forKey: "lock")
+        if (lockView.progress < 1.0) {
+            lockView.progress = 0;
+            currentProgress = 0.0;
+            self.animatePadlockView(duration: 18.0, destination: 1.0); //Write the time you intend, times x60. No idea why.
+        }
+        else {
+            currentProgress = 1.0;
+            self.animatePadlockView(duration: 18.0, destination: 0.0); //Write the time you intend, times x60. No idea why.
+        }
+    }
+    
+    //Recursive function to remove pop dependency and animate view
+    func animatePadlockView(duration: Float, destination: Float) {
+        UIView.animate(withDuration: 0.01, animations: {
+            self.lockView.progress = CGFloat(self.currentProgress);
+        }, completion: { (success) -> Void in
+            /* Destination is either 1, or 0, so we can base our decisions here*/
+            //The step is 0.01 divided by total duration, multiplied by the destination, which is 1 (or a decrease by 1 so it can be skipped as a neutral multiplier).
+            let animationProgress: Float = 100 * abs(destination - self.currentProgress); //This when complete will approach 0. So when times 100, it's less than 1, it's complete
+            if (animationProgress > 1) {
+                let stepValue: Float = 0.01 / duration;
+                if (destination == 1.0) {
+                    //This means values go up.
+                    self.currentProgress += stepValue;
+                }
+                else {
+                    //This means we must go to 0.
+                    self.currentProgress -= stepValue;
+                }
+                self.animatePadlockView(duration: duration, destination: destination);
+            }
+            else {
+                self.lockView.progress = CGFloat(destination);
+            }
+        })
     }
 }
